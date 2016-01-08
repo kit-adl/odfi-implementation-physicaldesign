@@ -1,12 +1,7 @@
 package provide odfi::implementation::techfile 1.0.0
 
-package require nx 2.0.0
-package require odfi::common
-package require odfi::closures 3.0.0
-package require odfi::files 2.0.0
-package require odfi::flist 1.0.0
-package require odfi::flextree 1.0.0
-package require odfi::nx::domainmixin 1.0.0
+package require odfi::implementation::layout 1.0.0
+
 
 namespace eval odfi::implementation::techfile {
     
@@ -56,7 +51,7 @@ namespace eval odfi::implementation::techfile {
         
         :public method addTechLayer {layer} {
             
-            :add $techLayer
+            :add $layer
             
             #${:techLayers} += $layer
         }
@@ -78,18 +73,25 @@ namespace eval odfi::implementation::techfile {
            
         }
 
+        :public method eachLayer closure {
+
+            [:shade  odfi::implementation::techfile::TechLayer children] foreach $closure
+        }
+
         ## VIADEFS 
         ########################
 
         ## Add a VIA definition to the list of VIA definitions
         :public method addVIADefinition viaDef {
-            ${:viaDefinitions} += $viaDef
+
+            :addChild $viaDef
+            #${:viaDefinitions} += $viaDef
         }
 
         ## Search for a VIA definition 
         :public method getVIADef name {
 
-            return [${:viaDefinitions} find { 
+            return [[:shade odfi::implementation::techfile::VIADef children] find { 
                 
                 if {[$it name get] == $name} {
                     return true
@@ -102,7 +104,7 @@ namespace eval odfi::implementation::techfile {
         }
 
         :public method eachVIADef closure {
-            ${:viaDefinitions} foreach $closure -level 2
+            [:shade odfi::implementation::techfile::VIADef children] foreach $closure
         }
 
         ## Language
@@ -110,39 +112,78 @@ namespace eval odfi::implementation::techfile {
         
         ## Creates a Class holding teh TechnologyLanguage Mixin, and the link to current technology 
         :public method createLanguage args {
-            
+                
+
+            puts "Creating Language for tech ${:name}"
+
+            #return 
             ## Create
             set languageName ${:name}Language 
-            nx::Class create $languageName  {
+            set techObj [current object]
+            nx::Class create [namespace current]::$languageName  {
              
                 upvar :name tn
+                upvar techObj techObj
                 #:variable techFile "::tech.${tn}"
                 
                
-                :property -accessor public [list techFile "::tech.${tn}"]
+                :property -accessor public [list techFile $techObj]
     
                 :public method inLayer {name closure} {
                             
-                    puts "In layer of current: [[current object] info class]"
+                   # puts "In layer of current: [[current object] info class]"
                     
                     set techLayer [${:techFile} getTechLayer $name]
                     
-                    puts "Techlayer: [$techLayer info class]"
+                    #puts "Techlayer: [$techLayer info class] -> $closure"
                     set added [:childrenDifference $closure]
                     
-                    puts "Added CT: [$added size]"
+                   # puts "Added CT: [$added size]"
                     $added foreach {
                         ##$it addParent $techLayer
                         $techLayer add $it
-                        puts "Added stuff: [$it info class]"
+                       # puts "Added stuff: [$it info class]"
                         [$it parents] foreach {
                           p => 
-                            puts "-- Parent: [$p info class]"
+                        #    puts "-- Parent: [$p info class]"
                         }
                     }
                     
                 }
+                
+                ## Create Method pro Layer
+                [$techObj shade [namespace current]::TechLayer children] foreach {
+                    
+                    #puts "Creating to[$it name get] "
+                    eval "
+                        :public method [$it name get] closure {
+                            :inLayer [$it name get] \$closure                                 
+                        } 
+
+                        :public method to[$it name get] args {
+                            set techLayer \[$techObj getTechLayer [$it name get]\]                              
+                            \$techLayer addChild \[current object \]
+                        }    
+                    "
+                    
+                    
+                }        
+                
+                ## Get Techlayer of current shape, if one 
+                :public method getTechLayer args {
+                    puts "Call to getTEchkyer from [namespace current]"
+                    set layer [:shade odfi::implementation::techfile::TechLayer parent]
+                    #set layer "BLA"
+                    return $layer
+                }
             }
+
+           
+
+
+            ## Export to layout shapes
+            odfi::implementation::layout::Rect domain-mixins add [namespace current]::$languageName -prefix ${:name}
+            odfi::implementation::layout::Rect domain-mixins add [namespace current]::$languageName -prefix tech
             return [namespace current]::$languageName
             
             
@@ -153,7 +194,7 @@ namespace eval odfi::implementation::techfile {
 
     nx::Object create Techfile {
 
-        :public object method parse file {
+        :public object method parse {{-name ""} file } {
 
             ## File or stream
             set stream $file
@@ -164,8 +205,11 @@ namespace eval odfi::implementation::techfile {
             
             set reader [odfi::files::LineReader new $stream]
             
+
+            #set name [lindex [split $file .] 0]
+            
             ## Prepare Resulting Techfile instance
-            set techFile [TechFile new]
+            set techFile [TechFile new -name $name]
 
             ## Parse TechLayers
             ###################
@@ -261,12 +305,25 @@ namespace eval odfi::implementation::techfile {
         :property -accessor public index:required
         :property -accessor public shortname:required
 
+
+        :public method init args {
+            next 
+
+            ## Listen to children 
+            :onChildAdded {
+
+                #puts "Recorded child for layer ${:name}"
+                set c [:child end]
+                $c title set "[$c title get]  on ${:name}"
+            }
+        }
+
     }
 
     #############################
     ## VIA 
     ####################
-    nx::Class create VIADef {
+    nx::Class create VIADef  -superclass odfi::flextree::FlexNode {
 
         ## Name
         :property -accessor public name:required
@@ -291,6 +348,51 @@ namespace eval odfi::implementation::techfile {
 
         :public method cutHeight {} {
             return [lindex [:cutLayerSize] 1]
+        }
+
+        ## Shaping with layout API
+        ##################
+
+        ## The target node must have the layout API
+        :public method place {targetNode _closure {-onlyCut false}} {
+
+            ## Bottom Enclosure
+            $targetNode group VIA_${:name} {
+
+                ## Bottom 
+                if {!$onlyCut} {
+                    :rect {
+                        :width  [expr [lindex ${:bottomLayerEnclosure} 0]*2 + [lindex ${:cutLayerSize} 0]]
+                        :height [expr [lindex ${:bottomLayerEnclosure} 1]*2 + [lindex ${:cutLayerSize} 1]]
+                        ${:bottomLayer} addChild [current object]
+                        :title set "VIA Bottom"
+                    }
+                }
+                ## Cut 
+                :rect {
+                    :width  [lindex ${:cutLayerSize} 0]
+                    :height [lindex ${:cutLayerSize} 1]
+                    #:tech:to[${:cutLayer} name get]
+                    ${:cutLayer} addChild [current object]
+
+                    :stroke set black 
+                    :stroke-width set .1
+                    :title set "VIA CUT"
+                }
+
+                ## Top Enclosure
+                :rect {
+                    :width  [expr [lindex ${:topLayerEnclosure} 0]*2 + [lindex ${:cutLayerSize} 0]]
+                    :height [expr [lindex ${:topLayerEnclosure} 1]*2 + [lindex ${:cutLayerSize} 1]]
+                    #:tech:to[${:topLayer} name get]
+                    ${:topLayer} addChild [current object]
+
+                    :title set "VIA Top"
+                }
+
+                :apply $_closure
+            }
+
         }
 
     }

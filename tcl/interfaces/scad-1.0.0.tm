@@ -21,7 +21,7 @@ namespace eval odfi::implementation::interfaces::scad {
                 set outs [::new odfi::richstream::RichStream #auto]
                 set defaultThickness 3
                 
-                puts "Object. [$it info class]"
+                #puts "Object. [$it info class]"
                 #puts [expr ("::odfi::scenegraph::svg::Rect"== "::odfi::scenegraph::svg::Rect" ) ]
                 if {[odfi::common::isClass $it ::odfi::scenegraph::svg::Rect]} {
             
@@ -51,9 +51,11 @@ namespace eval odfi::implementation::interfaces::scad {
                             // Children to make difference: $it -> [$it size] 
                         "
                             
+                        ## Coordinates are local here
+                            
                         #::puts "************ IN CHILD DIFF, it is $it ********"
                         $it each {
-                            $outs puts "translate(\[[$it getAbsoluteX], [$it getAbsoluteY], [$it getAbsoluteZ] \])"
+                            $outs puts "translate(\[[$it getX], [$it getY], [$it getZ] \])"
                             $outs puts "   square(\[ [$it getWidth],  [$it getHeight] \]);"
                         }
                             
@@ -121,7 +123,7 @@ namespace eval odfi::implementation::interfaces::scad {
             
                     ## Always output children
                     #$it each $writeSCADClosure
-                    ::puts "*!!*!!*!! Group join length: [llength $args] -> [string index $args 0] -> [string is list $args]"
+                    #::puts "*!!*!!*!! Group join length: [llength $args] -> [string index $args 0] -> [string is list $args]"
                     
                     if {[string is list $args]==1} {
                          $outs puts $args
