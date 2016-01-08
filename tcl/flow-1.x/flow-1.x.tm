@@ -18,8 +18,9 @@ package provide odfi::implementation::flow 1.0.0
 package require Itcl 3.4
 package require odfi::common 
 package require odfi::list 2.0.0
+package require odfi::log 1.0.0
 
-namespace eval edid::flow {
+namespace eval odfi::implementation::flow {
 
     ## Set to 1 when starting a flow
     variable inflow 0
@@ -53,7 +54,7 @@ namespace eval edid::flow {
 
         catch {destroy .reloadManagerButton}
         button .edid.reloadManagerButton -text "Reload Manager Window" -command {
-                ::edid::flow::managementWindow
+                ::odfi::implementation::flow::managementWindow
         }
         grid .edid.reloadManagerButton -column 1 -row 1
 
@@ -243,15 +244,15 @@ namespace eval edid::flow {
 
         public method getInfo args {
 
-            ::edid::log "Step Namespace: $implementationNS"
-            ::edid::log "Post Scripts: "
+            ::odfi::log::info "Step Namespace: $implementationNS"
+            ::odfi::log::info "Post Scripts: "
             foreach {sourceFile prepscript} $preScripts {
-                ::edid::log "--> From $sourceFile"
+                ::odfi::log::info "--> From $sourceFile"
             }
 
-            ::edid::log "Post Scripts: "
+            ::odfi::log::info "Post Scripts: "
             foreach {sourceFile postscript} $postScripts {
-                ::edid::log "--> From $sourceFile"
+                ::odfi::log::info "--> From $sourceFile"
             }
 
         }
@@ -285,7 +286,7 @@ namespace eval edid::flow {
         ## \brief Runs the Constructor provided script
         ##  args can contain:
         ##    -simulate : Does not eval code, but prepares everything else
-        ##    -inFlow   : Sets the edid::flow::inflow variable so that isInFlow returns 1
+        ##    -inFlow   : Sets the odfi::implementation::flow::inflow variable so that isInFlow returns 1
         public method execute args {
 
             ## Parameters
@@ -297,13 +298,13 @@ namespace eval edid::flow {
             }
 
             if {[lsearch -exact $args -inFlow]>-1} {
-                set edid::flow::inflow 1
+                set odfi::implementation::flow::inflow 1
             }
 
             ## ? Catch everything that's coming up to reset correctly inFlow variable
             if {[catch {
 
-                ::edid::log "flow step prepare \"$id\" Preparing step $id"
+                ::odfi::log::info "flow step prepare \"$id\" Preparing step $id"
 
                 ## Add Parameters to execution
                 namespace inscope $implementationNS "array set parameters {}"
@@ -343,13 +344,13 @@ namespace eval edid::flow {
 
                 ## Run
                 ##################
-                ::edid::log "flow step execute \"$id\" Starting step $id"
+                ::odfi::log::info "flow step execute \"$id\" Starting step $id"
 
                 ## Simulate : only log
                 ###############
                 if {$simulate==true} {
 
-                    ::edid::log "flow step simulate \"$id\" Would be run"
+                    ::odfi::log::info "flow step simulate \"$id\" Would be run"
 
                 } else {
 
@@ -362,12 +363,12 @@ namespace eval edid::flow {
             } res]} {
 
                 ## Reset inFlow
-                set edid::flow::inflow 0
+                set odfi::implementation::flow::inflow 0
                 error $res
 
             }
             ## Reset inFlow
-            set edid::flow::inflow 0
+            set odfi::implementation::flow::inflow 0
 
             return
         }
@@ -394,7 +395,7 @@ namespace eval edid::flow {
         ## \brief Same as reloadExecute but with edid::reloadEnvironment before
         public method reloadEnvExecute args {
 
-            edid::reloadEnvironment
+            #edid::reloadEnvironment
             execute $args
 
         }
@@ -402,7 +403,7 @@ namespace eval edid::flow {
         ## @return 1 if the step is executed as part of a flow (from a flow or another step)
         public method isInFlow args {
 
-            return $edid::flow::inflow
+            return $odfi::implementation::flow::inflow
 
         }
 
@@ -415,7 +416,7 @@ namespace eval edid::flow {
             ## Check not in encounter
             if {[string match "*encounter*" [info nameofexecutable]]} {
 
-                edid::error "Don't use reportExpectations in Encounter!! Use an external script"
+                ::odfi::log::error "Don't use reportExpectations in Encounter!! Use an external script"
                 return
             }
 
@@ -497,29 +498,29 @@ namespace eval edid::flow {
                 set simulate false
             }
 
-            ::edid::log "flow execute \"$id\" Starting flow $id"
+            ::odfi::log::info "flow execute \"$id\" Starting flow $id"
 
 
-            set edid::flow::inflow 1
+            set odfi::implementation::flow::inflow 1
 
 
             if {[catch {
                 foreach step [getSteps] {
                     $step execute $args
-                    set edid::flow::inflow 1
+                    set odfi::implementation::flow::inflow 1
                 }
 
                 } res]} {
 
                 ## Error in step -> Reset inflow variable
-                ::edid::log "error in step [$step cget -id]"
-                set edid::flow::inflow 0
+                ::odfi::log::info "error in step [$step cget -id]"
+                set odfi::implementation::flow::inflow 0
 
                 error $res
             }
 
 
-            set edid::flow::inflow 0
+            set odfi::implementation::flow::inflow 0
 
             return
 
@@ -529,7 +530,7 @@ namespace eval edid::flow {
         ## \brief Runs All the steps
         public method reloadExecute args {
 
-            ::edid::log "flow execute \"$id\" Starting flow $id"
+            ::odfi::log::info "flow execute \"$id\" Starting flow $id"
 
             foreach step [getSteps] {
                 $step reloadExecute
@@ -626,7 +627,7 @@ namespace eval edid::flow {
             foreach step [getSteps] {
 
                 if {[llength [itcl::find objects $step]]==0} {
-                    edid::warn "Flow $this contains an undefined steps/subflow: $step"
+                    ::odfi::log::warn "Flow $this contains an undefined steps/subflow: $step"
                      set ok false
                 }
             }
@@ -634,7 +635,7 @@ namespace eval edid::flow {
             ## Report
             #########
             if {$ok} {
-                edid::log "Everything Looks fine :-)"
+                ::odfi::log::info "Everything Looks fine :-)"
             }
 
         }
@@ -648,7 +649,7 @@ namespace eval edid::flow {
             ## Check not in encounter
             if {[string match "*encounter*" [info nameofexecutable]]} {
 
-                edid::error "Don't use reportExpectations in Encounter!! Use an external script"
+                ::odfi::log::error "Don't use reportExpectations in Encounter!! Use an external script"
                 return
             }
 
@@ -752,7 +753,7 @@ namespace eval edid::flow {
     ## \brief Prints all the available steps
     proc listSteps args {
 
-        set steps [lsort [itcl::find objects -class edid::flow::Step]]
+        set steps [lsort [itcl::find objects -class odfi::implementation::flow::Step]]
         foreach step $steps {
             puts "$step"
         }
@@ -762,7 +763,7 @@ namespace eval edid::flow {
     ## \brief Returns all the available steps
     proc getSteps args {
 
-        return [lsort [itcl::find objects -class edid::flow::Step]]
+        return [lsort [itcl::find objects -class odfi::implementation::flow::Step]]
 
     }
 
@@ -791,7 +792,7 @@ namespace eval edid::flow {
     ## Prints all the available Flows
     proc listFlows args {
 
-        set flows [lsort [itcl::find objects -class edid::flow::Flow]]
+        set flows [lsort [itcl::find objects -class odfi::implementation::flow::Flow]]
         foreach flow $flows {
             puts "$flow"
         }
