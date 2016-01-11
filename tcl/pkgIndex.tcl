@@ -3,7 +3,7 @@
 set dir [file dirname [file normalize [info script]]]
 
 
-package ifneeded odfi::implementation::flow        1.0.0 [list source $dir/flow-1.x/flow-1.x.tm]
+package ifneeded odfi::eda::flow                   1.0.0 [list source $dir/flow-1.x/flow-1.x.tm]
 package ifneeded odfi::implementation::techfile    1.0.0 [list source $dir/tech/techfile-1.0.tm]
 package ifneeded odfi::implementation::lef 	       1.0.0 [list source $dir/tech/lef-1.0.tm]
 

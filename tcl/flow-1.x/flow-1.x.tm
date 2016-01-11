@@ -14,13 +14,13 @@
 # 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-package provide odfi::implementation::flow 1.0.0
+package provide odfi::eda::flow 1.0.0
 package require Itcl 3.4
 package require odfi::common 
 package require odfi::list 2.0.0
 package require odfi::log 1.0.0
 
-namespace eval odfi::implementation::flow {
+namespace eval odfi::eda::flow {
 
     ## Set to 1 when starting a flow
     variable inflow 0
@@ -54,7 +54,7 @@ namespace eval odfi::implementation::flow {
 
         catch {destroy .reloadManagerButton}
         button .edid.reloadManagerButton -text "Reload Manager Window" -command {
-                ::odfi::implementation::flow::managementWindow
+                ::odfi::eda::flow::managementWindow
         }
         grid .edid.reloadManagerButton -column 1 -row 1
 
@@ -286,7 +286,7 @@ namespace eval odfi::implementation::flow {
         ## \brief Runs the Constructor provided script
         ##  args can contain:
         ##    -simulate : Does not eval code, but prepares everything else
-        ##    -inFlow   : Sets the odfi::implementation::flow::inflow variable so that isInFlow returns 1
+        ##    -inFlow   : Sets the odfi::eda::flow::inflow variable so that isInFlow returns 1
         public method execute args {
 
             ## Parameters
@@ -298,7 +298,7 @@ namespace eval odfi::implementation::flow {
             }
 
             if {[lsearch -exact $args -inFlow]>-1} {
-                set odfi::implementation::flow::inflow 1
+                set odfi::eda::flow::inflow 1
             }
 
             ## ? Catch everything that's coming up to reset correctly inFlow variable
@@ -363,12 +363,12 @@ namespace eval odfi::implementation::flow {
             } res]} {
 
                 ## Reset inFlow
-                set odfi::implementation::flow::inflow 0
+                set odfi::eda::flow::inflow 0
                 error $res
 
             }
             ## Reset inFlow
-            set odfi::implementation::flow::inflow 0
+            set odfi::eda::flow::inflow 0
 
             return
         }
@@ -403,7 +403,7 @@ namespace eval odfi::implementation::flow {
         ## @return 1 if the step is executed as part of a flow (from a flow or another step)
         public method isInFlow args {
 
-            return $odfi::implementation::flow::inflow
+            return $odfi::eda::flow::inflow
 
         }
 
@@ -501,26 +501,26 @@ namespace eval odfi::implementation::flow {
             ::odfi::log::info "flow execute \"$id\" Starting flow $id"
 
 
-            set odfi::implementation::flow::inflow 1
+            set odfi::eda::flow::inflow 1
 
 
             if {[catch {
                 foreach step [getSteps] {
                     $step execute $args
-                    set odfi::implementation::flow::inflow 1
+                    set odfi::eda::flow::inflow 1
                 }
 
                 } res]} {
 
                 ## Error in step -> Reset inflow variable
                 ::odfi::log::info "error in step [$step cget -id]"
-                set odfi::implementation::flow::inflow 0
+                set odfi::eda::flow::inflow 0
 
                 error $res
             }
 
 
-            set odfi::implementation::flow::inflow 0
+            set odfi::eda::flow::inflow 0
 
             return
 
@@ -753,7 +753,7 @@ namespace eval odfi::implementation::flow {
     ## \brief Prints all the available steps
     proc listSteps args {
 
-        set steps [lsort [itcl::find objects -class odfi::implementation::flow::Step]]
+        set steps [lsort [itcl::find objects -class odfi::eda::flow::Step]]
         foreach step $steps {
             puts "$step"
         }
@@ -763,7 +763,7 @@ namespace eval odfi::implementation::flow {
     ## \brief Returns all the available steps
     proc getSteps args {
 
-        return [lsort [itcl::find objects -class odfi::implementation::flow::Step]]
+        return [lsort [itcl::find objects -class odfi::eda::flow::Step]]
 
     }
 
@@ -792,7 +792,7 @@ namespace eval odfi::implementation::flow {
     ## Prints all the available Flows
     proc listFlows args {
 
-        set flows [lsort [itcl::find objects -class odfi::implementation::flow::Flow]]
+        set flows [lsort [itcl::find objects -class odfi::eda::flow::Flow]]
         foreach flow $flows {
             puts "$flow"
         }
