@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <link rel="stylesheet" type="text/css" href="/designs/css/designs.css"/>
+        <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+        <script src="http://ajax.aspnetcdn.com/ajax/jquery.dataTables/1.9.4/jquery.dataTables.min.js"></script>
+        <script src="http://jquery-datatables-row-grouping.googlecode.com/svn/trunk/media/js/jquery.dataTables.rowGrouping.js"></script>
+        <script type="text/javascript">
+
+            function pullData(dataPath,contentType) {
+
+                // Clear
+                //---------
+                var reportView = $("#report-view")
+                reportView.empty()
+
+                console.log("Pulling data of type "+contentType)
+
+                var targetContainer = reportView
+                if (contentType=="text/plain") {
+                    console.log("Pulling into pre container")
+                    targetContainer = $("<pre></pre>")
+                    $(reportView).append(targetContainer)
+                }
+
+                // Load
+                //------------
+                $(targetContainer).text("Loading...")
+                $(targetContainer).load("/designs/data/"+dataPath)
+
+            }
+            function callAction(actionPath) {
+
+                console.log("Calling action")
+                $.get("/designs/action/"+actionPath)
+
+            }
+
+        </script>
+
+        <!--<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/3.3.0/build/cssreset/reset-min.css"/>-->
+
+        <title><% "[$design getObjectName] - [$designConfig getName] - [$run getName]" %></title>
+    </head>
+    <body>
+
+        <!-- Breadcrumbs -->
+        <%
+         set bcCount 0
+         breadCrumbs [list [$run getDesign] [$run getDesignConfig] $run] {
+
+            set backuplist [lrepeat [expr 3-$bcCount] ..]
+            set backupString [join $backuplist /]
+            incr bcCount
+
+            return "<a href='$backupString/[$it getFullName]/summary'>[$it getFullName]</a>"
+         }
+
+        %>
+
+        <h1>Run summary for : <% $run getName %></h1>
+
+        <!-- Global Run informations -->
+        <!-- ####################### -->
+        <div>
+            <h2>Run Statistics</h2>
+            <%
+                if {![catch {set rtlTop [$run getConfig top-rtl]}]} {
+                    div {
+                        return "RTL Top: [file normalize $rtlTop]"
+                    }
+                }
+
+            %>
+            <%
+            ul {
+
+                + li {
+                    "Run location: [$run getFolderPath]"
+                }
+
+            }
+
+            %>
+            <!-- Inject Something from run -->
+            <!-- ######################### -->
+            <div id="run-stat-inject">
+            <%
+                view-inject run-stat
+            %>
+            </div>
+
+        </div>
+
+        <!-- Global Run Actions -->
+        <!-- ####################### -->
+        <div>
+            <h2>Run Management</h2>
+
+            <!-- Setup force -->
+            <ul>
+                <li>
+                   <a href="#" onclick='callAction("<% "/[$design getObjectName]/[$designConfig getName]/[$run getName]/setupForce" %>")'>Setup (force)</a>
+
+                </li>
+            </ul>
+
+            <!-- Inject Something from run -->
+            <!-- ######################### -->
+            <div id="run-stat-inject">
+            <%
+                view-inject run-manage
+            %>
+            </div>
+
+        </div>
+
+        <div>
+            <h2>Data Points</h2>
+
+            <%
+                ## Gather all points over all reports
+                ###########
+                set dataPoints [odfi::list::do [$run getReports] {
+
+                    filter {
+                        set numberOPoints [llength [$it getDatapoints]]
+                        #puts "Number of points for [$it getName] : $numberOPoints"
+                        if {$numberOPoints>0} {
+                            return 1
+                        } else {
+                            return 0
+                        }
+                    }
+                    transform {
+                        set dp [$it getDatapoints]
+                        return [list [$dp getName] [$dp getType]]
+                    }
+                }]
+
+
+                ul {
+
+                    foreach {point type} $dataPoints {
+                        push li {
+                            return "$point -> $type"
+                        }
+                    }
+
+                }
+
+            %>
+
+        </div>
+
+        <div>
+            <h2>Data - Reports - Available Groups</h2>
+            <%
+            ul {
+
+
+
+            }
+
+
+            %>
+        </div>
+        <div>
+            <h2>Data - Reports</h2>
+
+            <!-- Utiliy infos -->
+            <p>
+            <%
+                ul {
+
+                    ## Most recent Report
+                    ##############
+                    set mostRecent 0
+                    set mostRecentReport ""
+                    odfi::list::each [$run getReports] {
+                        if {[$it hasMetadata last-modified] && [$it getMetadata last-modified]>$mostRecent} {
+                            set mostRecent        [$it getMetadata last-modified]
+                            set mostRecentReport  $it
+                        }
+                    }
+
+                    if {$mostRecentReport!=""} {
+                        push li {
+                            return "Most Recent Report: [$mostRecentReport getName]"
+                        }
+                    }
+
+                    ## Group with the Most recent report
+                    ############
+                    if {$mostRecentReport!="" && [$mostRecentReport getGroup]!=""} {
+                        push li {
+                            return "Most Recent modified group: [[$mostRecentReport getGroup] getName]"
+                        }
+                    }
+
+                }
+            %>
+            </p>
+            <p>
+                Here is a list of the reports this run is offering:
+
+                <script type="text/javascript">
+                    $(document).ready(function() {
+                        $('#data-reports-table').dataTable({
+                             "bLengthChange": true,
+                             "iDisplayLength": 50
+                        }).rowGrouping();
+                    } );
+                </script>
+                <%
+                    table {
+
+                        ## Html stuff
+                        set id "data-reports-table"
+                        lappend class pretty
+
+                        set allMetadatas {}
+
+                        ## Header
+                        ##############
+                        header {
+                            column "Group"
+                            column "Name"
+                            column "Type"
+                            ## FIXME: Add The extra metadata infos from the reports
+
+                            ## List metadata
+                            ##  - If not already in allMetadatas, append
+                            ##  - sort
+                            #########
+
+                            odfi::list::each [$run getReports] {
+                                foreach {metadata name} [$it listMetadatas] {
+                                    if {[lsearch -exact $allMetadatas $metadata]==-1} {
+                                        lappend allMetadatas $metadata $name
+                                    }
+                                }
+                            }
+
+                            ## Add columns
+                            #set allMetadatas [lsort $allMetadatas]
+                            foreach {metadata name} $allMetadatas {
+                                column $name
+                            }
+
+                            ## Views
+                            #########
+                            column "Report Views"
+
+                        }
+
+                        ## Body
+                        #############
+                        body {
+
+                            set currentGroupName "default"
+                            odfi::list::each [$run getReports] {
+
+                                ## Group
+                                ##################
+                                if {[odfi::common::isClass $it edid::design::reports::ReportGroup]} {
+                                    set currentGroupName [$it getName]
+                                    return
+                                }
+
+                                ## Data list:
+                                ## - Name + Type
+                                ## - Metadatas
+                                ################
+
+                                set nameContent "[$it getName]"
+
+                                set dataList [list $nameContent [$it getType]]
+
+                                ## Metadatas
+                                foreach {metadata name} $allMetadatas {
+                                    lappend dataList [$it getMetadata $metadata]
+                                }
+
+
+                                ## Views
+
+                                set viewsContent {}
+                                foreach reportView [$it listViews] {
+
+                                    ## Embedded view
+                                    lappend viewsContent "<a href='#report-view' onclick=\"pullData('/[$design getObjectName]/[$designConfig getName]/[$run getName]/[$it getName]?view=$reportView','[$it viewContentType $reportView]')\">$reportView</a>"
+
+                                    ## New window
+                                    lappend viewsContent "<a href='/designs/data/[$design getObjectName]/[$designConfig getName]/[$run getName]/[$it getName]?view=$reportView' target='_black'>$reportView (new window)</a>"
+                                }
+                                lappend dataList [join $viewsContent]
+
+                                row [concat $currentGroupName $dataList]
+                            }
+
+                        }
+
+                    }
+
+                %>
+            </p>
+            <div id="report-view">
+
+            </div>
+        </div>
+
+
+    </body>
+
+
+
+</html>

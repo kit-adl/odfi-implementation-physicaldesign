@@ -1,0 +1,446 @@
+<%= set bumpsOffset 25 %>
+<svg 
+    id="<% $caller cget -svgId %>" 
+    xmlns="http://www.w3.org/2000/svg" 
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    style="font-familiy:Sans Serif;font-size:10pt" version="1.1">
+
+    <desc>Bump definitions</desc>
+
+    <script xlink:href="jquery.min.js" type="application/ecmascript"  />
+
+    <script type="application/ecmascript">  <![CDATA[
+  	
+        // Updates the Bump text displayed when the mouse goes over a bump
+        function updateHoverBumpName(bumpid) {
+            
+            // Source Object
+            //----------------------
+            //var bump = evt.target;
+            //if (!bump)
+            //    return
+                
+                
+           // console.log("Target: "+bumpid)
+            var bump = $("#"+bumpid)
+            
+            // Target
+            //----------------------
+            var id = "<% $caller cget -svgId %>-hover-bump"
+            var hoverSpan = $("#"+id)  
+            if (hoverSpan==null)
+                return
+            
+            var bumpName = $("#"+bumpid+" title:first-child").text()
+            hoverSpan.text(bumpName);
+              
+        
+              
+              
+        }
+	    
+	    
+	    function placeIOClusters() {
+    
+	    	// Flip Image
+	    	//-----------------------
+	    	
+	    	
+	        // Find All I/O Clusters
+	        // Find all <g> with class = IOCluster
+	        //---------------------------------
+	        /*var allIOClusters = $("g")
+	        allIOClusters.each(function(i,e) {
+	        
+	            // Filter out non I/O Cluster
+	            if ($(e).attr("class")!="IOCluster")
+	                return;
+	        
+	            // Get Related Bump name
+	            var bumpName = $(e).attr("data-relatedBump")
+	            
+	            // Get Bump Rect per Id
+	            var bumpRect = $("#Bump_"+bumpName)
+	            if (bumpRect==null) {
+	                return
+	            }
+	            
+	            // Move group under the rect
+	            //-------------------------------------
+	            $(e).attr("transform","translate("+bumpRect.attr("x")+","+bumpRect.attr("y")+")");
+	            
+	            
+	            // Foreach rect in the group, draw a line from the rect to the matching bump
+	            $(e.getElementsbyTagName("rect")).each(function(i,ioRect) {
+	                
+	                // Create line to
+	                //var path = $("<path l")
+	                
+	            
+	            })
+	        
+	        
+	        });*/
+	        
+            // var pwidth = <% $caller cget -plotWidth %>
+            // var pheight = <% $caller cget -plotHeight %>
+	        //transform="translate(pwidth,pheight) scale(-1,1) translate(-pwidth,-pheight)"
+	        
+	        //document.rootElement.forceRedraw()
+	        
+	        var bumpText = document.getElementById("bumpNameText")
+	        //$(bumpText).attr("transform","translate(200,200)");
+	    
+	        console.log("In Load function: ")
+	    
+	        
+	       
+			
+	    }
+  
+  ]]>
+    </script>
+
+    <!-- ## Standard available shapes definitions -->
+    <!-- ################## -->
+    <defs>
+        
+      
+            <!-- ## Rectanble -->
+            <rect
+                        id="bump-symbol-square"
+                        stroke='black'
+                        width='<% $caller cget -bumpSize %>' 
+                        height='<% $caller cget -bumpSize %>'
+                        rx='3' 
+                        ry='3' 
+                        >
+                        <title>FF</title>
+            </rect>
+            
+            
+            <!-- ## Triangle -->
+            <%=
+                set trianglePoints {}
+                lappend trianglePoints 0,[$caller getBumpHeight] 
+                lappend trianglePoints [$caller getBumpWidth],[$caller getBumpHeight] 
+                lappend trianglePoints [expr [$caller getBumpWidth]/2],0
+                lappend trianglePoints 0,[$caller getBumpHeight]
+             
+                set trianglePoints [join $trianglePoints " "]
+            %>
+            <polygon id="bump-symbol-triangle" 
+                    points="<% trianglePoints %>"/>
+       
+            <!-- ## Hexagone -->
+            <!-- ###### -->
+            <%=
+                
+                set trianglePoints {}
+                lappend trianglePoints 0,[$caller getBumpHeight] 
+                lappend trianglePoints [$caller getBumpWidth],[$caller getBumpHeight] 
+                lappend trianglePoints [expr [$caller getBumpWidth]/2],0
+                lappend trianglePoints 0,[$caller getBumpHeight]
+             
+                set trianglePoints [join $trianglePoints " "]
+            
+            %>
+            <!-- try with 60x60 -->
+            <%=
+                set scaleRatio [expr 1-([$caller getBumpWidth].0/60.0)]
+                puts "Scale ratio: $scaleRatio ,  [$caller getBumpWidth]/60"
+            %>
+
+             <polygon  id="bump-symbol-hexagone" preserveAspectRatio="none" 
+                        transform="scale(<% scaleRatio %> <% scaleRatio %>)"     
+                        viewBox="0 0 [$caller getBumpWidth] [$caller getBumpHeight]"
+                        points="0,20 0,40 20,60 40,60 60,40 60,20 40,0 20,0" />
+    
+    </defs>
+
+    <%=
+        ## Global Definitions
+        ###############################
+        
+        # Column Name row size
+        set columnNamesSize  [$caller getBumpHeight]
+        set rowNamesSize     [$caller getBumpWidth]
+    
+        # Bumps translate (used to move bumps depending on added stuff)
+        set bumpsTranslateX $columnNamesSize
+        set bumpsTranslateY $rowNamesSize
+    
+   
+        
+        set bumpArray [$caller cget -bumpArray]
+        set ::imageWidth [expr [$bumpArray cget -width]*([$caller getBumpWidth]+[$caller getBumpSpacing])]
+        set imageHeight [expr [$bumpArray cget -height]*([$caller getBumpHeight]+[$caller getBumpSpacing])]
+    
+    %>
+
+
+    <!-- The Columns' Names -->
+    <!-- ################# -->
+    <g id="<% $caller cget -svgId %>-rownames" transform="translate(<% columnNamesSize %>,0)">
+    <%
+        ## Add a text for every row name
+         
+        for {set i 0} {$i < [[$caller cget -bumpArray] cget -width]} {incr i} {
+            
+            set x [$caller getBumpX $i]
+            set y 0
+            odfi::common::println "<text 
+                                    x='$x' 
+                                    y='$y' 
+                                    dx='5' 
+                                    dy='[expr $columnNamesSize-5]'
+                                    font-family='Verdana'
+                                    fill='black'
+                                    stroke='black'
+                                    font-size='12'
+                                    viewBox='$x $y [expr [$caller cget -bumpSize]-3] [expr $columnNamesSize-3]'
+                                    width='[$caller cget -bumpSize]' 
+                                    height='$columnNamesSize' 
+                                    >[$caller getColumnName $i]</text>" $eout
+            
+        }
+    
+        
+    %>
+    </g>
+    
+    <!-- The Rows' Names -->
+    <!-- ############### -->
+    <g id="<% $caller cget -svgId %>-rownames" transform="translate(0,<% rowNamesSize %>)">
+    <%
+        ## Add a text for every column name
+        for {set i 0} {$i < [[$caller cget -bumpArray] cget -height]} {incr i} {
+            
+            set x 0
+            set y [$caller getBumpY $i]
+            odfi::common::println "<text 
+                                    x='$x' 
+                                    y='$y' 
+                                    dx='5' 
+                                    dy='[expr [$caller getBumpHeight]-[$caller getBumpSpacing]-5]' 
+                                    font-family='Verdana'
+                                    fill='black'
+                                    stroke='black'
+                                    font-size='12'
+                                    viewBox='$x $y [expr $rowNamesSize-3] [expr [$caller cget -bumpSize]-3]'
+                                    width='$rowNamesSize' 
+                                    height='[$caller cget -bumpSize]' 
+                                    >[$caller getRowName $i]</text>" $eout
+            
+        }
+    
+        
+    %>
+    </g>
+    
+    <!-- The Bump Plot -->
+    <!-- ############# -->
+    <g id="<% $caller cget -svgId %>-bumps" fill="black"  transform="translate(<% bumpsTranslateX %>,<% bumpsTranslateY %>)">
+        <g>
+            <%
+            set bumpsYEnd 0
+            foreach {bump} [[$caller cget -bumpArray] getBumps] {
+
+                set rowIndex    [$bump cget -arrayY]
+                set columnIndex [$bump cget -arrayX]
+    
+    
+                ## Position
+                #set bumpX [expr ($columnIndex*([$caller cget -bumpSize]+[$caller cget -bumpSpacing]))+[$caller cget -bumpSpacing]]
+                #set bumpY [expr ($rowIndex*([$caller cget -bumpSize]+[$caller cget -bumpSpacing]))+[$caller cget -bumpSpacing]]
+                
+                set bumpX [$caller getBumpX $columnIndex]
+                set bumpY [$caller getBumpY $rowIndex]
+    
+                set bumpsYEnd [expr ($bumpY+[$caller cget -bumpSize]) > $bumpsYEnd ? $bumpY+[$caller cget -bumpSize] : $bumpsYEnd ]
+    
+                ## Make Bump less opaque if no ioCell is defined and not a wire
+                set opacity 1.0
+                #if {[$bump cget -ioCell]=="" && [$bump cget -wire]==false} {
+                # set opacity 0.5
+                #}
+    
+                ## Fill with red if no ioPin is related
+                set color [$caller getColorForBump $bump]
+                #if {[$bump cget -ioPin]=="-1"} {
+                # set opacity 1
+                # set color "yellow"
+                #}
+    
+                odfi::common::println "
+                <g fill='black'>
+                    " $eout
+                    
+                    odfi::common::println "
+                        <g viewBox='$x $y [$caller cget -bumpSize] [$caller cget -bumpSize]'>
+                        <use xlink:href='#bump-symbol-[$caller getShapeForBump $bump]' 
+                                 id='Bump_[$bump getEncounterName]'
+                                fill='$color' 
+                                x='${bumpX}' 
+                                y='${bumpY}'
+                                width='[$caller cget -bumpSize]' 
+                                height='[$caller cget -bumpSize]'
+                                onmouseover='updateHoverBumpName(\"Bump_[$bump getEncounterName]\")'>
+                            <title>[$bump cget -name]</title>
+                        </use>
+                        </g>
+                    " $eout
+                    
+                    
+                    #odfi::common::println "
+                    #<rect id='Bump_[$bump getEncounterName]' 
+                    #    fill='$color'
+                    #    opacity='$opacity' 
+                    #    stroke='black'
+                    #    width='[$caller cget -bumpSize]' 
+                    #    height='[$caller cget -bumpSize]'
+                    #    rx='3' 
+                     #   ry='3' 
+                     #   x='${bumpX}' 
+                     #   y='${bumpY}' data-name='[$bump cget -name]'
+                     #   onmouseover='updateHoverBumpName(evt)'>
+                     #   <title>[$bump cget -name]</title>
+                    #</rect>
+                    #" $eout
+    
+                    ## Optional Circle for Bump that are wired without I/O Cell
+                    if {[$bump cget -wire]==true} {
+                    odfi::common::println "
+                    <circle fill='white'
+                        cx='[expr ${bumpX}+[$caller cget -bumpSize]/2]'
+                        cy='[expr ${bumpY}+[$caller cget -bumpSize]/2]'
+                        r='[expr [$caller cget -bumpSize]/4]'></circle>
+                    " $eout
+                    }
+                    ## End of group
+                    odfi::common::println "
+                </g>
+                " $eout
+    
+    
+                odfi::common::println "" $eout
+
+
+            }
+
+
+
+            %>
+        </g>
+
+
+        <!-- Layer for io rows if defined -->
+        <!-- ############################ -->
+        <g>
+            <%
+            if {[info exists ::iorows]==1} {
+
+            set ioWidth [expr int($::bumps::plotter::bumpSize/8)]
+            set ioHeight [expr int(floor($ioWidth*2.5))]
+
+            # set ioWidth [expr int($::bumpSize/2)]
+            # set ioHeight [expr int(floor($ioWidth/1.5))]
+
+            foreach iorow $::iorows {
+
+            ## Create Group for the Rows
+            set cleanioRowName [regsub -all : $iorow ""]
+            odfi::common::println "
+            <g class='IOCluster' id='$cleanioRowName'
+                data-relatedBump='[$iorow cget -relatedBump]'>
+                <title>$cleanioRowName, related to: [$iorow cget
+                    -relatedBump]</title>
+
+                " $eout
+
+                ## Loop over each io and add the rect next to each other
+                set ioCount 0
+                #set diorow "::$diorow"
+                foreach ioCell [$iorow getCells] {
+
+                odfi::common::println "
+                <rect fill='magenta' stroke='black'
+                    x='[expr $ioCount*$ioWidth]' y='0' width='$ioWidth'
+                    height='$ioHeight'>
+
+                </rect>
+                " $eout
+
+                incr ioCount
+                }
+
+                odfi::common::println "
+            </g>
+            " $eout
+
+            }
+
+
+            }
+
+
+
+            %>
+        </g>
+    </g>
+    <!-- EOF Bump Plot -->
+    
+    <!-- Legend -->
+    <!-- ################# -->
+    <g transform="translate(<% columnNamesSize %> <% expr $bumpsYEnd+[$caller getBumpHeight]+[$caller getBumpSpacing]+20 %>)"  id='<% $caller cget -svgId %>-legend'>
+        <% 
+        
+            ## Prepare Elements
+            #################
+            
+            set i 0
+            set legendSize [expr [$caller getBumpWidth]]
+            set legendSpacing 5
+            set realSize [expr $legendSize-$legendSpacing]
+            
+            ## NUmber of columns to place legend elements
+            set bumpArray [$caller cget -bumpArray]
+            set ::imageWidth [expr [$bumpArray cget -width]*([$caller getBumpWidth]+[$caller getBumpSpacing])]
+            set legendColumnWidth  [expr ($legendSize)+[$caller cget -legendColumnSize]]
+            set legendColumnsCount [expr int(floor($::imageWidth/$legendColumnWidth))]
+            
+            set legendElements {}
+            
+            foreach {pattern name} [$caller getPatternsParameter "name"] {
+                
+                ## Place group
+                set groupColumn [expr $i%$legendColumnsCount]
+                set groupRow    [expr ceil($i/$legendColumnsCount)]
+                
+                set color [$caller getParameterForPattern $pattern color white]
+                
+               odfi::common::println "
+                    <g id='[$caller cget -svgId]-legend-item$i' transform='translate([expr $legendColumnWidth*$groupColumn] [expr $legendSize*$groupRow])'>
+                    <rect x='0' y='0' height='$realSize' width='$realSize' fill='$color'></rect>
+                    <text   font-family='Verdana'
+                            font-size='20' x='$legendSize' y='0' dy='[expr $realSize-3]'>$name</text>
+                    </g>
+                " $eout
+                
+                incr i
+                
+            }
+            
+            ## Reorganize them
+            
+        
+        %>
+        
+        
+        
+        
+        
+    </g>
+
+
+</svg>	

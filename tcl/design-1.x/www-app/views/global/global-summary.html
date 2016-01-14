@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Designs Summary</title>
+
+
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style><style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style><style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style>
+
+
+</head>
+<body>
+
+<h2>List of available something like designs</h2>
+<p>
+    Use underlying list to jump to designs views
+</p>
+
+    <ul>
+        <%
+
+            odfi::list::transform $designs {
+                return "<li>[$it getObjectName]</li>"
+            }
+        %>
+
+
+    </ul>
+    <%
+      ul {
+        push li { return "Test"}
+        push li {return  "Test"}
+      }
+
+    %>
+
+    <%
+        ul {
+
+            ## Group Designs by name
+            ##############
+            foreach {designName designs} [odfi::list::groupBy $designs { $it getName}] {
+              puts "FOUND Design named: $designName"
+              push li {
+
+                    push span {return $designName}
+                    push ul {
+
+                      ## Each Design Config gets a point
+                      ################
+                      odfi::list::transform $designs {
+                          set design $it
+
+                          $it eachDesignConfig {
+
+                            set designConfig $it
+
+                            li {
+
+                              push link [$it getName] to "[$design getFullName]/[$it getFullName]/summary"
+                              push ul {
+
+                                ## Design Run
+                                ##################
+                                $designConfig eachRun {
+
+                                  li {link [$it getName] to "[$design getFullName]/[$designConfig getFullName]/[$it getFullName]/summary"}
+
+                                }
+
+                              }
+
+                            }
+                          }
+                          ## EOF Design Config LI
+
+                        }
+                      }
+                      ## EOF Design UL
+                }
+
+            }
+            ## EOF Grouped Designs
+
+
+          }
+          ## EOF Grouped Design ULUL
+    %>
+
+
+</body>
+
+</html>

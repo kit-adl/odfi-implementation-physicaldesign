@@ -1,0 +1,274 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII" />
+<title>Floorplans viewer</title>
+
+<!-- Bootstrap Styles -->
+<!-- ################ -->
+<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet"
+	media="screen" />
+
+<!-- Viewer Styles -->
+<!-- ############ -->
+<style type="text/css">
+
+	body {
+		margin:20px;
+	
+	}
+	.legend-color-box {
+		width: 20px;
+		min-width: 20px;
+		height: 20px;
+		border: 2px black solid;
+		display: inline-block;
+	}
+	
+	.fp-svg-container {
+		text-align:center
+	
+	}
+	
+	/** Table Styles */
+	table {
+		width:100%;
+   		border-collapse: collapse;
+   		margin-bottom: 15px;
+   	}
+    td,th {	
+    	border: 1px gray solid;
+    	padding: 3px;
+    }
+    th {
+    	text-align:center;
+    	background-color:black;
+    	color:white;
+    	font-weight:  bold;
+    }
+    
+    /* This is the row showing an I/o Row name */
+    table .io-table-rowname {
+    	
+    }
+
+</style>
+
+</head>
+<body>
+
+
+	<!-- Scripts -->
+	<!-- ######### -->
+	<%=
+		## Download scripts in output folder if not present
+		set outputFolder [$caller cget -outputFolder]
+		
+		# jquery
+		if {[file exists $outputFolder/jquery.min.js]==0} {
+			catch {exec wget http://code.jquery.com/jquery.min.js -O $outputFolder/jquery.min.js} res
+		}
+		
+		# bootstrap
+		if {[file exists $outputFolder/bootstrap]==0} {
+			catch {exec wget http://twitter.github.com/bootstrap/assets/bootstrap.zip -O $outputFolder/bootstrap.zip}
+			exec unzip $outputFolder/bootstrap.zip
+		}
+		
+		## General definitions
+		##########
+		
+		
+	
+	%>
+	
+	<script src="jquery.min.js"></script>
+	
+	
+	
+	<!-- load functions -->
+	<!-- ############## -->
+	<script  type="text/javascript">
+			
+	$(document).ready(function() {
+		
+		var fpSvg = $("#fp-svg")
+		//console.log("FP Viewer: "+fpSvg.width()+"x"+fpSvg.height())
+		
+		//-- Parameters
+		var scaleFactorTowindowWidth = 40 // in percent
+		var scaleFactorTowindowHeight = 100 // in percent
+
+   		//--- Get die group
+   		var viewer = $("#fp-svg")
+   		var dieGroup = $("#die-group")
+   		if (dieGroup==null)
+   			return
+		
+   		var viewerWidth = $(viewer).width()
+	   	var viewerHeight = $(viewer).height()
+   			
+		
+		
+		// Scale Floorplan
+		//-------------------------------
+		
+		
+   		
+   		//-- Get FP Viewer size
+   		viewerWidth = $(viewer).width()
+   		viewerHeight = $(viewer).height()
+   		console.log("FP SVG Dimensions: "+viewerWidth+":"+viewerHeight)
+   		
+   		//---- Get Windows size
+   		var w=window.innerWidth
+		|| document.documentElement.clientWidth
+		|| document.body.clientWidth;
+
+		var h=window.innerHeight
+		|| document.documentElement.clientHeight
+		|| document.body.clientHeight;
+   		console.log("Window: "+w+":"+h)
+		
+		//---- Define target FP viewer size
+		//var newViewerWidth = w*scaleFactorTowindowWidth/100
+		//var newViewerHeight = (viewerHeight * newViewerWidth)/viewerWidth // Determine height depending on width to height rate
+		
+		var newViewerHeight = h*scaleFactorTowindowHeight/100 // Determine height depending on width to height rate
+		var newViewerWidth = (viewerWidth * newViewerHeight)/viewerHeight
+		
+		viewer.width(newViewerWidth)
+		viewer.height(newViewerHeight)
+	
+		console.log("Set FP SVG to: "+viewer.width()+":"+viewer.height())
+	
+		//---- Determine Scaling from old to new sizes
+		var scaleX =  newViewerWidth /  viewerWidth
+		var scaleY =  newViewerHeight /  viewerHeight
+		dieGroup.attr("transform","scale("+scaleX+","+scaleY+")")
+	
+		console.log("Scaling die group to: "+scaleX+":"+scaleY)
+		
+		console.log("Set FP SVG to: "+viewer.width()+":"+viewer.height())
+		
+		// Flip Floorplan to match EDI view
+		//-----------------------------
+		
+		
+ 
+		var tr= dieGroup.attr("transform")+" translate("+(viewerWidth/2)+","+(viewerHeight/2)+") scale(1,-1) translate(-"+(viewerWidth/2)+",-"+(viewerHeight/2)+")"
+		dieGroup.attr("transform",tr)
+		
+		
+	})
+		
+	
+	</script>
+	
+	<!-- Navigation -->
+	<!-- ######### -->
+	
+	
+	<!-- #### Floorplan -->
+	<!-- ############ -->
+	<div class="row-fluid">
+		<h3>Floorplan Viewer</h3>
+		<div id="fp-svg-container">
+	    <%= set floorplan [lindex [$caller cget -floorplans] 0] %>		
+		<%
+		
+			
+
+		#### SVG
+		odfi::common::println "<svg id='fp-svg'
+		 height='[$floorplan getHeight]'
+		 width='[$floorplan getWidth]'
+	     xmlns='http://www.w3.org/2000/svg' 
+	     xmlns:xlink='http://www.w3.org/1999/xlink' 
+	     version='1.1'>" $eout
+		
+			#### DIE Rectangle
+			odfi::common::println "<g id='die-group'>" $eout
+			#odfi::common::println "<rect id='die-rect' x='0' y='0' width='[$floorplan cget -dieWidth]' height='[$floorplan cget -dieHeight]' fill='black' />" $eout
+			
+			#### Core Rectangle
+			odfi::common::println "
+			<g id='core-group'>
+				<rect id='core-rect' 
+						x='0' 
+						y='0' 
+						width='[$floorplan getWidth]' 
+						height='[$floorplan getHeight]' fill='gray' />
+			" $eout
+			
+			######## Display Components
+			###################################
+			proc displayGroup {group} {
+				#upvar eout $eout
+				
+				#puts "Processing group $group"
+				
+				## Open Group
+				odfi::common::println "
+					<g id='group-[$group getId]'>
+					<rect fill='green' 
+							stroke='black'
+							width='[$group getWidth]' 
+							height='[$group getHeight]'
+							x='[$group getAbsoluteX]'
+							y='[$group getAbsoluteY]' />
+				" $::eout
+				
+				## output
+				$group each {
+					
+					#puts "-> elt: $elt -> [itcl::scope $elt]"
+					
+					## Another Group
+					#############
+					if {[llength [itcl::find objects $elt -class edid::prototyping::fp::Group]]>0} {
+						#puts "->It's a group"
+						displayGroup $elt
+					}
+					
+					## A Hard Macro
+					#######################
+					if {[llength [itcl::find objects $elt -class edid::prototyping::fp::HardMacro]]>0} {
+						odfi::common::println "<rect fill='gray' stroke='black' id='macro-[$elt getId]'
+							width='[$elt getWidth]' 
+							height='[$elt getHeight]'
+							x='[$elt getAbsoluteX]'
+							y='[$elt getAbsoluteY]' />" $::eout
+					}
+				
+				}
+				
+				## Close Group
+				odfi::common::println "</g>" $::eout
+				
+			}
+			displayGroup $floorplan
+			
+			
+			#foreach {path block} [array get floorPlan::blocks] {
+			#	odfi::common::println "<rect fill='blue' x='[$block cget -x]' y='[$block cget -y]' width='2000' height='1000'><title>$path</title></rect>" $eout
+			#}
+		
+			#### EOF core rectangle
+			odfi::common::println "</g>" $eout
+			
+			#### EOF die rectangle
+			odfi::common::println "</g>" $eout
+			
+		odfi::common::println "</svg>" $eout
+		
+	
+		%>
+
+	
+	</div>
+	<!-- EOF Floorplan -->
+	
+	
+</body>
+</html>

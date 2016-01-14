@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:tface="http://www.odfi.org/tcl/ewww/faces">
+<head>
+<title>Webdata Example</title>
+
+<link href="/resources/favicon.ico" rel="icon" type="image/x-icon" />
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+</head>
+<body>
+
+
+<script type="text/javascript">
+
+    $(document).ready(function(){
+      
+        console.log("Loading designs list");
+        $.get("/designs/data/designs/list",function(data,status){
+            console.log("Data: " + data + "\nStatus: " + status);
+
+            $(data.results).each(function(i,o) {
+
+                $("#designs-list").append($("<li>"+o.name+"</li>"));
+                console.log("-- Data: " + o.name);
+
+            });
+
+        });
+
+
+        //var obj = eval ("(" + txt + ")");
+
+    });
+
+
+
+
+</script>
+
+
+<h1>Designs viewer</h1>
+
+<ul id="designs-list"></ul>
+
+<!-- Data Table -->
+<!-- ########### -->
+
+<tface:table data="data:designs.list">
+    <thead>
+        <tr>
+            <th>Design Name</th>
+        </tr>
+
+    </thead>
+
+</tface:table>
+
+
+</body>
+
+
+</html>

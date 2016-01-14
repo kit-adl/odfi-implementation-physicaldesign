@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Designs Summary</title>
+
+
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style><style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style><style>
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+</style>
+
+
+</head>
+<body>
+
+
+
+<h2>Design Config <% $designConfig getName %> Summary</h2>
+
+<p>Available Runs:</p>
+<div>
+    <%
+    ul {
+
+        $designConfig eachRun {
+
+            li {
+
+                link [$it getName] to "[$it getName]/summary"
+
+            }
+
+
+        }
+
+    }
+
+    %>
+
+</div>
+
+<!-- Statistics -->
+<!-- ########## -->
+<div>
+
+</div>
+
+</body>
+
+</html>

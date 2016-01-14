@@ -1,0 +1,29 @@
+foreach m $cMembers {
+             
+                ## If m is not an object name, try to resolve variable
+                ######################
+                set existing [itcl::find objects $m]
+                if {[llength $existing]==0} {
+                    set m [odfi::common::resolveVariable $m]
+        
+                    set existing [itcl::find objects ::$m]
+                    if {[llength $existing]==0} {
+                        error "Creating group, provided object $m not resolvable to any object"
+                    }
+                }
+                set obj [lindex $existing 0]
+                
+                
+                ## If Object is a TechMacro, create a Hard Macro instance
+                ######################
+                set existingTechMacro [itcl::find objects $obj -class edid::tech::Macro]
+                if {[llength $existingTechMacro]>0} {
+                    set hm [$m toHardMacro]
+                    $hm setParent $this
+                    lappend members $hm
+                } else {
+                    $m setParent $this
+                    lappend members $m
+                }
+                
+            }

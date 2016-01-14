@@ -1,0 +1,17 @@
+
+body {
+
+    font-family: sans-serif;
+}
+table {
+
+    font-size: 9pt;
+    border-collapse: collapse;
+    border: 1px black solid;
+    /*width: 100%;*/
+    clear: both;
+
+}
+tr, td, th {
+    border: 1px black solid;
+}

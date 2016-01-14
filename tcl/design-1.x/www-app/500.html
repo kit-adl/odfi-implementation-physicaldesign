@@ -1,0 +1,30 @@
+<html>
+    <head>
+        <title>OOOOps</title>
+    </head>
+    <body>
+
+        <h2>An error has happened:</h2>
+
+        <div>
+            <h3>Short Message</h3>
+            <p>
+                <% return $err %>
+            </p>
+
+        </div>
+
+        <div>
+            <h>Detailed Message</h3>
+            <p>
+                <% dict get $errorOptions -errorinfo %>
+            </p>
+
+        </div>
+
+
+    </body>
+
+
+
+</html>

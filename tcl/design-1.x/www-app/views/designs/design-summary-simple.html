@@ -1,0 +1,49 @@
+<html>
+    <head>
+
+    </head>
+    <body>
+
+        <div>
+        <h1>Design summary for : <% $design getObjectName %></h1>
+
+        <p>
+            Here is a list of all Design Configs and runs
+            <%
+                ul {
+
+                    ## Design Configs
+                    $design eachDesignConfig {
+
+                        li {
+                            push link [$it getName] to [$it getName]/summary
+
+                            ## Runs
+                            ##############
+                            push ul {
+                                $it eachRun {
+                                    li {link [$it getName] to [[$it getDesignConfig] getName]/[$it getName]/summary}
+
+                                }
+                            }
+
+                        }
+
+
+                    }
+
+                }
+            %>
+
+        </p>
+        <h2>Cross Reports for design configs</h2>
+        <p>
+            This is a table offering a view of the equivalent reports available accros design configs
+        </p>
+        </div>
+
+    </body>
+
+
+
+</html>
