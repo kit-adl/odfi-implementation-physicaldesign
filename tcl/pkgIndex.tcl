@@ -11,6 +11,10 @@ package ifneeded odfi::eda::flow                   1.0.0 [list source $dir/flow-
 package ifneeded odfi::implementation::techfile    1.0.0 [list source $dir/tech/techfile-1.0.tm]
 package ifneeded odfi::implementation::lef 	       1.0.0 [list source $dir/tech/lef-1.0.tm]
 
+package ifneeded odfi::implementation::libfile     1.0.0 [list source $dir/libfile/libfile-1.x.tm]
+
+package ifneeded odfi::implementation::sdc     1.0.0 [list source $dir/sdc/sdc-1.x.tm]
+
 ## Layout and partition Stuff v1 (based on SceneGraph Language)
 #####################################
 package ifneeded odfi::implementation::layout 	   1.0.0 [list source $dir/layout/layout-1.0.tm]
